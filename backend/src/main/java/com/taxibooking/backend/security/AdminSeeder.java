@@ -18,13 +18,13 @@ public class AdminSeeder {
 
     @PostConstruct
     public void seedAdmin() {
-        if (adminRepository.count() == 0) {
-            Admin admin = new Admin();
+        Admin admin = adminRepository.findByUsername("admin").orElse(null);
+        if (admin == null) {
+            admin = new Admin();
             admin.setUsername("admin");
-            // BCrypt hash of "AdminPassword123"
-            admin.setPasswordHash(passwordEncoder.encode("AdminPassword123"));
-            adminRepository.save(admin);
-            System.out.println("Default admin user ('admin' / 'AdminPassword123') seeded successfully!");
         }
+        admin.setPasswordHash(passwordEncoder.encode("AdminPassword123"));
+        adminRepository.save(admin);
+        System.out.println("Default admin user ('admin' / 'AdminPassword123') forcefully updated!");
     }
 }
