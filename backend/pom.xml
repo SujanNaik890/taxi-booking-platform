@@ -149,4 +149,5 @@
 		</plugins>
 	</build>
 
+	<!-- Force cache invalidation 1 -->
 </project>
