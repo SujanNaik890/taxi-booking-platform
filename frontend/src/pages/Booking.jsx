@@ -10,6 +10,8 @@ const Booking = () => {
   
   const pickupRef = useRef(null);
   const dropRef = useRef(null);
+  const pickupSuggestionsRef = useRef(null);
+  const dropSuggestionsRef = useRef(null);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -24,6 +26,14 @@ const Booking = () => {
     distance: '',
     estimatedPrice: '',
   });
+
+  const [pickupInput, setPickupInput] = useState('');
+  const [dropInput, setDropInput] = useState('');
+  const [pickupSuggestions, setPickupSuggestions] = useState([]);
+  const [dropSuggestions, setDropSuggestions] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState({ pickup: false, drop: false });
+  const [showSuggestions, setShowSuggestions] = useState({ pickup: false, drop: false });
+  const [geoLoading, setGeoLoading] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [submittedBooking, setSubmittedBooking] = useState(null);
@@ -47,9 +57,9 @@ const Booking = () => {
     if (!pickupVal || !dropVal) return;
     
     try {
-      // 1. Geocode pickup using free OpenStreetMap Nominatim API
+      // 1. Geocode pickup using free OpenStreetMap Nominatim API - prioritize India
       const pickupRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickupVal)}&limit=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickupVal)}&countrycodes=in&limit=1`,
         { headers: { 'User-Agent': 'SharavatiTravelLinkBookingApp/1.0' } }
       );
       const pickupData = await pickupRes.json();
@@ -59,9 +69,9 @@ const Booking = () => {
       }
       const pickupCoords = { lat: parseFloat(pickupData[0].lat), lon: parseFloat(pickupData[0].lon) };
 
-      // 2. Geocode drop using Nominatim
+      // 2. Geocode drop using Nominatim - prioritize India
       const dropRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dropVal)}&limit=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dropVal)}&countrycodes=in&limit=1`,
         { headers: { 'User-Agent': 'SharavatiTravelLinkBookingApp/1.0' } }
       );
       const dropData = await dropRes.json();
@@ -95,9 +105,7 @@ const Booking = () => {
     }
   };
 
-  const calculateDistance = () => {
-    const pickupVal = pickupRef.current?.value || formData.pickup;
-    const dropVal = dropRef.current?.value || formData.drop;
+  const calculateDistanceDirect = (pickupVal, dropVal) => {
     if (!pickupVal || !dropVal) return;
 
     if (window.google) {
@@ -119,7 +127,9 @@ const Booking = () => {
               return {
                 ...prev,
                 distance: roundedDist,
-                estimatedPrice: price
+                estimatedPrice: price,
+                pickup: pickupVal,
+                drop: dropVal
               };
             });
             toast.success(`Calculated distance: ${distText}`);
@@ -135,6 +145,171 @@ const Booking = () => {
     }
   };
 
+  const calculateDistance = () => {
+    calculateDistanceDirect(pickupInput, dropInput);
+  };
+
+  // Sync inputs with form data changes (e.g. initial loads, dest updates)
+  useEffect(() => {
+    if (formData.pickup) setPickupInput(formData.pickup);
+  }, [formData.pickup]);
+
+  useEffect(() => {
+    if (formData.drop) setDropInput(formData.drop);
+  }, [formData.drop]);
+
+  // Query Nominatim suggestions
+  const fetchSuggestions = async (query, field) => {
+    if (!query || query.trim().length < 3) {
+      if (field === 'pickup') setPickupSuggestions([]);
+      else setDropSuggestions([]);
+      return;
+    }
+
+    setSuggestionsLoading(prev => ({ ...prev, [field]: true }));
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&limit=5`,
+        { headers: { 'User-Agent': 'SharavatiTravelLinkBookingApp/1.0' } }
+      );
+      const data = await res.json();
+      if (field === 'pickup') {
+        setPickupSuggestions(data || []);
+        setShowSuggestions(prev => ({ ...prev, pickup: true }));
+      } else {
+        setDropSuggestions(data || []);
+        setShowSuggestions(prev => ({ ...prev, drop: true }));
+      }
+    } catch (err) {
+      console.error("Error fetching suggestions:", err);
+    } finally {
+      setSuggestionsLoading(prev => ({ ...prev, [field]: false }));
+    }
+  };
+
+  // Debounce inputs for suggestions queries
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (!window.google && pickupInput && pickupInput !== formData.pickup) {
+        fetchSuggestions(pickupInput, 'pickup');
+      }
+    }, 400);
+    return () => clearTimeout(delayDebounce);
+  }, [pickupInput]);
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (!window.google && dropInput && dropInput !== formData.drop) {
+        fetchSuggestions(dropInput, 'drop');
+      }
+    }, 400);
+    return () => clearTimeout(delayDebounce);
+  }, [dropInput]);
+
+  // Click outside to dismiss suggestions dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (pickupSuggestionsRef.current && !pickupSuggestionsRef.current.contains(e.target)) {
+        setShowSuggestions(prev => ({ ...prev, pickup: false }));
+      }
+      if (dropSuggestionsRef.current && !dropSuggestionsRef.current.contains(e.target)) {
+        setShowSuggestions(prev => ({ ...prev, drop: false }));
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectSuggestion = (place, field) => {
+    const address = place.display_name;
+    if (field === 'pickup') {
+      setPickupInput(address);
+      setFormData(prev => ({ ...prev, pickup: address }));
+      setPickupSuggestions([]);
+      setShowSuggestions(prev => ({ ...prev, pickup: false }));
+      
+      setTimeout(() => {
+        calculateDistanceDirect(address, dropInput);
+      }, 50);
+    } else {
+      setDropInput(address);
+      setFormData(prev => ({ ...prev, drop: address }));
+      setDropSuggestions([]);
+      setShowSuggestions(prev => ({ ...prev, drop: false }));
+      
+      setTimeout(() => {
+        calculateDistanceDirect(pickupInput, address);
+      }, 50);
+    }
+  };
+
+  const handlePickupChange = (e) => {
+    const val = e.target.value;
+    setPickupInput(val);
+    setFormData(prev => ({ ...prev, pickup: val }));
+  };
+
+  const handleDropChange = (e) => {
+    const val = e.target.value;
+    setDropInput(val);
+    setFormData(prev => ({ ...prev, drop: val }));
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setGeoLoading(true);
+    toast.loading("Retrieving live location...", { id: "geo-toast" });
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          let address = '';
+          if (window.google) {
+            const geocoder = new window.google.maps.Geocoder();
+            const latlng = { lat: latitude, lng: longitude };
+            const response = await geocoder.geocode({ location: latlng });
+            if (response.results && response.results[0]) {
+              address = response.results[0].formatted_address;
+            }
+          }
+
+          if (!address) {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+              { headers: { 'User-Agent': 'SharavatiTravelLinkBookingApp/1.0' } }
+            );
+            const data = await res.json();
+            address = data.display_name || `${latitude}, ${longitude}`;
+          }
+
+          setPickupInput(address);
+          setFormData(prev => ({ ...prev, pickup: address }));
+          toast.success("Location retrieved!", { id: "geo-toast" });
+          
+          setTimeout(() => {
+            calculateDistanceDirect(address, dropInput);
+          }, 100);
+        } catch (err) {
+          console.error("Reverse geocoding failed:", err);
+          toast.error("Could not resolve coordinates to address", { id: "geo-toast" });
+        } finally {
+          setGeoLoading(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        toast.error("Location access denied or unavailable", { id: "geo-toast" });
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // Set initial drop/type from query params and pre-fill customer name & phone if logged in
   useEffect(() => {
     const dest = searchParams.get('destination');
@@ -143,12 +318,18 @@ const Booking = () => {
     const savedName = localStorage.getItem('name');
     const savedPhone = localStorage.getItem('phone');
 
+    const initialDrop = dest ? (dest === 'Custom' ? '' : dest) : '';
+
     setFormData((prev) => ({ 
       ...prev, 
       customerName: savedName || prev.customerName,
       phone: savedPhone || prev.phone,
-      ...(dest ? { drop: dest === 'Custom' ? '' : dest } : {})
+      drop: initialDrop || prev.drop
     }));
+    
+    if (initialDrop) {
+      setDropInput(initialDrop);
+    }
     
     if (type) {
       if (type.includes('Airport')) {
@@ -175,21 +356,22 @@ const Booking = () => {
       pickupAutocomplete.addListener('place_changed', () => {
         const place = pickupAutocomplete.getPlace();
         if (place.formatted_address) {
+          setPickupInput(place.formatted_address);
           setFormData((prev) => ({ ...prev, pickup: place.formatted_address }));
-          setTimeout(calculateDistance, 50);
+          setTimeout(() => calculateDistanceDirect(place.formatted_address, dropInput), 50);
         }
       });
 
       dropAutocomplete.addListener('place_changed', () => {
         const place = dropAutocomplete.getPlace();
         if (place.formatted_address) {
+          setDropInput(place.formatted_address);
           setFormData((prev) => ({ ...prev, drop: place.formatted_address }));
-          setTimeout(calculateDistance, 50);
+          setTimeout(() => calculateDistanceDirect(pickupInput, place.formatted_address), 50);
         }
       });
     };
 
-    // Load Script dynamically if key present, else rely on manual inputs
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     if (!window.google && apiKey) {
       const script = document.createElement('script');
@@ -201,7 +383,7 @@ const Booking = () => {
     } else if (window.google) {
       initAutocomplete();
     }
-  }, []);
+  }, [pickupInput, dropInput]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -222,16 +404,36 @@ const Booking = () => {
     });
   };
 
+  // Auto-calculate distance when both inputs are populated and typing has stopped
+  useEffect(() => {
+    if (pickupInput && dropInput && (pickupInput !== formData.pickup || dropInput !== formData.drop)) {
+      const delayDebounce = setTimeout(() => {
+        calculateDistanceDirect(pickupInput, dropInput);
+      }, 1000);
+      return () => clearTimeout(delayDebounce);
+    }
+  }, [pickupInput, dropInput]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.customerName || !formData.phone || !formData.pickup || !formData.drop || !formData.date || !formData.time) {
+    
+    const finalPickup = pickupInput || formData.pickup;
+    const finalDrop = dropInput || formData.drop;
+    
+    const submissionData = {
+      ...formData,
+      pickup: finalPickup,
+      drop: finalDrop
+    };
+
+    if (!submissionData.customerName || !submissionData.phone || !submissionData.pickup || !submissionData.drop || !submissionData.date || !submissionData.time) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await bookingsAPI.create(formData);
+      const res = await bookingsAPI.create(submissionData);
       setSubmittedBooking(res.data);
       toast.success("Booking request submitted successfully!");
     } catch (err) {
@@ -307,7 +509,7 @@ Booking Ref: ${submittedBooking.id}`;
 
               {/* Locations */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2 relative">
+                <div className="space-y-2 relative" ref={pickupSuggestionsRef}>
                   <label className="block text-xs font-semibold text-brand-gold uppercase tracking-wider">Pickup Location *</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3.5 h-4 w-4 text-brand-gold" />
@@ -315,16 +517,54 @@ Booking Ref: ${submittedBooking.id}`;
                       ref={pickupRef}
                       type="text"
                       name="pickup"
-                      value={formData.pickup}
-                      onChange={handleChange}
-                      onBlur={calculateDistance}
+                      value={pickupInput}
+                      onChange={handlePickupChange}
+                      onFocus={() => {
+                        if (pickupSuggestions.length > 0) {
+                          setShowSuggestions(prev => ({ ...prev, pickup: true }));
+                        }
+                      }}
                       placeholder="Address or Landmark"
-                      className="premium-input-icon"
+                      className="premium-input-icon pr-10"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      disabled={geoLoading}
+                      title="Use current location"
+                      className="absolute right-3 top-3.5 text-brand-gold hover:text-brand-accent transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {geoLoading ? (
+                        <div className="h-4 w-4 border-2 border-brand-gold border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      )}
+                    </button>
+
+                    {/* Suggestions Dropdown */}
+                    {showSuggestions.pickup && pickupSuggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 mt-1 bg-brand-charcoal border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                        {pickupSuggestions.map((place, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(place, 'pickup')}
+                            className="w-full text-left px-4 py-3 text-xs text-white hover:bg-brand-gold hover:text-brand-dark transition-colors border-b border-white/5 last:border-0 flex items-start space-x-2"
+                          >
+                            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                            <span>{place.display_name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="space-y-2 relative">
+
+                <div className="space-y-2 relative" ref={dropSuggestionsRef}>
                   <label className="block text-xs font-semibold text-brand-gold uppercase tracking-wider">Drop Location *</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3.5 h-4 w-4 text-brand-gold" />
@@ -332,13 +572,34 @@ Booking Ref: ${submittedBooking.id}`;
                       ref={dropRef}
                       type="text"
                       name="drop"
-                      value={formData.drop}
-                      onChange={handleChange}
-                      onBlur={calculateDistance}
+                      value={dropInput}
+                      onChange={handleDropChange}
+                      onFocus={() => {
+                        if (dropSuggestions.length > 0) {
+                          setShowSuggestions(prev => ({ ...prev, drop: true }));
+                        }
+                      }}
                       placeholder="Destination city or spot"
                       className="premium-input-icon"
                       required
                     />
+
+                    {/* Suggestions Dropdown */}
+                    {showSuggestions.drop && dropSuggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 mt-1 bg-brand-charcoal border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                        {dropSuggestions.map((place, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(place, 'drop')}
+                            className="w-full text-left px-4 py-3 text-xs text-white hover:bg-brand-gold hover:text-brand-dark transition-colors border-b border-white/5 last:border-0 flex items-start space-x-2"
+                          >
+                            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                            <span>{place.display_name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
