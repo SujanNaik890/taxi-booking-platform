@@ -37,7 +37,7 @@ const DEFAULT_DESTINATIONS = [
 const Home = () => {
   const [destinations, setDestinations] = useState(DEFAULT_DESTINATIONS);
   const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
