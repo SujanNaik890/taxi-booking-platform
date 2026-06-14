@@ -18,13 +18,13 @@ public class DestinationService {
     @PostConstruct
     public void seedDestinations() {
         String[][] defaultsInfo = {
-            {"Ooty", "https://images.unsplash.com/photo-1590050752117-238cb0612b1b?auto=format&fit=crop&w=600&q=80", "Queen of Hill Stations, known for its expansive tea gardens, pleasant climate, and scenic Pykara lakes.", "260.0"},
-            {"Guruvayur", "https://images.unsplash.com/photo-1627894562479-798eb4bbf949?auto=format&fit=crop&w=600&q=80", "Famous pilgrimage town home to the historic Guruvayur Sri Krishna Temple, a spiritual haven for devotees.", "340.0"},
-            {"Mysuru", "https://images.unsplash.com/photo-1590766948562-0f69f159e21a?auto=format&fit=crop&w=600&q=80", "City of Palaces, rich in royal heritage, featuring the spectacular Mysore Palace, Chamundi Hills, and Brindavan Gardens.", "150.0"},
-            {"Coorg", "https://images.unsplash.com/photo-1588598126786-fb7c6dcf0f19?auto=format&fit=crop&w=600&q=80", "The Scotland of India, famous for coffee plantations, mist-covered valleys, Abbey waterfalls, and lush spice estates.", "250.0"},
+            {"Ooty", "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=600&q=80", "Queen of Hill Stations, known for its expansive tea gardens, pleasant climate, and scenic Pykara lakes.", "260.0"},
+            {"Guruvayur", "https://images.unsplash.com/photo-1542856391-010fb87dcfed?auto=format&fit=crop&w=600&q=80", "Famous pilgrimage town home to the historic Guruvayur Sri Krishna Temple, a spiritual haven for devotees.", "340.0"},
+            {"Mysuru", "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=600&q=80", "City of Palaces, rich in royal heritage, featuring the spectacular Mysore Palace, Chamundi Hills, and Brindavan Gardens.", "150.0"},
+            {"Coorg", "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=600&q=80", "The Scotland of India, famous for coffee plantations, mist-covered valleys, Abbey waterfalls, and lush spice estates.", "250.0"},
             {"Wayanad", "https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?auto=format&fit=crop&w=600&q=80", "Stunning Kerala hill station featuring the ancient Edakkal Caves, Chembra Peak heart-lake, and spice plantations.", "280.0"},
-            {"Chikmagalur", "https://images.unsplash.com/photo-1622180556111-e6e7372d8293?auto=format&fit=crop&w=600&q=80", "The birthplace of coffee in India, offering spectacular trekking trails like Mullayanagiri, waterfalls, and scenic viewpoints.", "240.0"},
-            {"Mangalore", "https://images.unsplash.com/photo-1562979314-bee7453e911c?auto=format&fit=crop&w=600&q=80", "Bustling coastal port city renowned for its pristine Panambur beach, historical temples, and delectable local seafood.", "350.0"}
+            {"Chikmagalur", "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=600&q=80", "The birthplace of coffee in India, offering spectacular trekking trails like Mullayanagiri, waterfalls, and scenic viewpoints.", "240.0"},
+            {"Mangalore", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80", "Bustling coastal port city renowned for its pristine Panambur beach, historical temples, and delectable local seafood.", "350.0"}
         };
 
         for (String[] info : defaultsInfo) {

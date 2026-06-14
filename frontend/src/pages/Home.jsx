@@ -7,28 +7,28 @@ const DEFAULT_DESTINATIONS = [
   {
     id: "ooty",
     name: "Ooty",
-    image: "https://images.unsplash.com/photo-1590050752117-238cb0612b1b?auto=format&fit=crop&w=500&q=75",
+    image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=500&q=75",
     description: "Queen of Hill Stations, known for its expansive tea gardens, pleasant climate, and scenic Pykara lakes.",
     distance: 260.0
   },
   {
     id: "guruvayur",
     name: "Guruvayur",
-    image: "https://images.unsplash.com/photo-1627894562479-798eb4bbf949?auto=format&fit=crop&w=500&q=75",
+    image: "https://images.unsplash.com/photo-1542856391-010fb87dcfed?auto=format&fit=crop&w=500&q=75",
     description: "Famous pilgrimage town home to the historic Guruvayur Sri Krishna Temple, a spiritual haven for devotees.",
     distance: 340.0
   },
   {
     id: "mysuru",
     name: "Mysuru",
-    image: "https://images.unsplash.com/photo-1590766948562-0f69f159e21a?auto=format&fit=crop&w=500&q=75",
+    image: "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=500&q=75",
     description: "City of Palaces, rich in royal heritage, featuring the spectacular Mysore Palace, Chamundi Hills, and Brindavan Gardens.",
     distance: 150.0
   },
   {
     id: "coorg",
     name: "Coorg",
-    image: "https://images.unsplash.com/photo-1588598126786-fb7c6dcf0f19?auto=format&fit=crop&w=500&q=75",
+    image: "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=500&q=75",
     description: "The Scotland of India, famous for coffee plantations, mist-covered valleys, Abbey waterfalls, and lush spice estates.",
     distance: 250.0
   }
