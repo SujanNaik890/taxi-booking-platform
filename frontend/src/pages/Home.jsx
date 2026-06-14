@@ -3,8 +3,39 @@ import { Link } from 'react-router-dom';
 import { Car, Shield, Clock, Compass, Phone, MessageSquare, Star, ArrowRight } from 'lucide-react';
 import { destinationsAPI, reviewsAPI } from '../services/api';
 
+const DEFAULT_DESTINATIONS = [
+  {
+    id: "ooty",
+    name: "Ooty",
+    image: "https://images.unsplash.com/photo-1590050752117-238cb0612b1b?auto=format&fit=crop&w=500&q=75",
+    description: "Queen of Hill Stations, known for its expansive tea gardens, pleasant climate, and scenic Pykara lakes.",
+    distance: 260.0
+  },
+  {
+    id: "guruvayur",
+    name: "Guruvayur",
+    image: "https://images.unsplash.com/photo-1627894562479-798eb4bbf949?auto=format&fit=crop&w=500&q=75",
+    description: "Famous pilgrimage town home to the historic Guruvayur Sri Krishna Temple, a spiritual haven for devotees.",
+    distance: 340.0
+  },
+  {
+    id: "mysuru",
+    name: "Mysuru",
+    image: "https://images.unsplash.com/photo-1590766948562-0f69f159e21a?auto=format&fit=crop&w=500&q=75",
+    description: "City of Palaces, rich in royal heritage, featuring the spectacular Mysore Palace, Chamundi Hills, and Brindavan Gardens.",
+    distance: 150.0
+  },
+  {
+    id: "coorg",
+    name: "Coorg",
+    image: "https://images.unsplash.com/photo-1588598126786-fb7c6dcf0f19?auto=format&fit=crop&w=500&q=75",
+    description: "The Scotland of India, famous for coffee plantations, mist-covered valleys, Abbey waterfalls, and lush spice estates.",
+    distance: 250.0
+  }
+];
+
 const Home = () => {
-  const [destinations, setDestinations] = useState([]);
+  const [destinations, setDestinations] = useState(DEFAULT_DESTINATIONS);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +46,9 @@ const Home = () => {
           destinationsAPI.getAll(),
           reviewsAPI.getApproved()
         ]);
-        setDestinations(destRes.data.slice(0, 4)); // Show top 4
+        if (destRes.data && destRes.data.length > 0) {
+          setDestinations(destRes.data.slice(0, 4));
+        }
         setReviews(revRes.data);
       } catch (err) {
         console.error("Failed to fetch home page data", err);
@@ -64,7 +97,7 @@ const Home = () => {
             <div className="relative flex justify-center">
               <div className="absolute inset-0 bg-brand-gold/10 blur-[120px] rounded-full"></div>
               <img
-                src="https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=800&q=80"
+                src="https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80"
                 alt="Premium Taxi Service"
                 className="rounded-3xl shadow-2xl border border-white/10 object-cover w-full max-w-md h-[300px] sm:h-[400px] relative z-10"
               />
